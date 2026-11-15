@@ -5,8 +5,8 @@ Usage:
     python main.py eval    # run the 8-conversation trajectory eval set
     python main.py chat    # interactive REPL (type 'quit' to exit)
 
-Everything runs offline with the deterministic stub responder. No API key
-is needed, and no network calls are made.
+The default stub runs offline. USE_REAL_LLM=1 enables paid provider requests;
+ENABLE_TRACING=1 with a LangSmith key enables turn exports.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ import sys
 from agent import BookstoreAgent
 from eval import run_eval
 from trajectory import TrajectoryLogger
+from llm import StubResponder
 
 DEMO_TURNS = [
     "Hi!",
@@ -25,10 +26,16 @@ DEMO_TURNS = [
 ]
 
 
+def _mode_label(agent: BookstoreAgent) -> str:
+    if isinstance(agent.llm, StubResponder):
+        return "stub responder, offline inference"
+    return f"{type(agent.llm).__name__}, model={getattr(agent.llm, 'model', 'unknown')}"
+
+
 def run_demo() -> None:
     logger = TrajectoryLogger("trajectories/demo.jsonl")
     agent = BookstoreAgent(logger=logger)
-    print("Bookstore assistant — scripted demo (stub responder, offline)\n")
+    print(f"Bookstore assistant — scripted demo ({_mode_label(agent)})\n")
     for user_text in DEMO_TURNS:
         reply = agent.chat(user_text, thread_id="demo")
         print(f"You:   {user_text}")
@@ -38,7 +45,7 @@ def run_demo() -> None:
 
 def run_chat() -> None:
     agent = BookstoreAgent(logger=TrajectoryLogger("trajectories/chat.jsonl"))
-    print("Bookstore assistant — interactive chat (stub responder, offline).")
+    print(f"Bookstore assistant — interactive chat ({_mode_label(agent)}).")
     print("Type 'quit' to exit.\n")
     while True:
         try:

@@ -46,13 +46,10 @@ def test_stub_respond_mentions_results_and_memory():
     assert "science fiction" in reply
 
 
-def test_real_adapter_is_a_scaffold():
-    adapter = RealLLMAdapter()
-    assert adapter.api_key is None  # no key configured in this environment
-    with pytest.raises(NotImplementedError):
-        adapter.classify_intent("Hello")
-    with pytest.raises(NotImplementedError):
-        adapter.respond(intent="chat")
+def test_real_adapter_requires_an_explicit_key(monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="LLM_API_KEY"):
+        RealLLMAdapter()
 
 
 def test_get_llm_defaults_to_stub(monkeypatch):

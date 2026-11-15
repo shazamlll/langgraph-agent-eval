@@ -63,3 +63,17 @@ def test_full_eval_passes_threshold():
     assert report["overall"] >= PASS_THRESHOLD
     assert report["passed"] is True
     assert all(r["passed"] for r in report["conversations"])
+
+
+def test_eval_identifies_the_adapter_in_saved_report(tmp_path):
+    import json
+    from agent import BookstoreAgent
+    from llm import StubResponder
+
+    class NamedResponder(StubResponder):
+        model = "mock-model"
+
+    path = tmp_path / "report.json"
+    report = run_eval(agent=BookstoreAgent(llm=NamedResponder()), report_path=path, verbose=False)
+    assert report["llm"] == {"adapter": "NamedResponder", "model": "mock-model"}
+    assert json.loads(path.read_text(encoding="utf-8"))["llm"] == report["llm"]

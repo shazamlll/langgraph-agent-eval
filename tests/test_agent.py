@@ -4,6 +4,7 @@ import json
 
 from agent import BookstoreAgent
 from trajectory import TrajectoryLogger
+from llm import StubResponder
 
 
 def test_single_turn_search_returns_expected_book():
@@ -52,6 +53,21 @@ def test_greeting_needs_no_tool():
     agent = BookstoreAgent()
     reply = agent.chat("Hi!")
     assert "bookstore assistant" in reply.lower()
+    assert agent.last_turn["tool_calls"] == []
+
+
+def test_non_search_turn_does_not_receive_previous_catalog_results():
+    class RecordingResponder(StubResponder):
+        def respond(self, **kwargs):
+            self.latest_context = kwargs
+            return super().respond(**kwargs)
+
+    llm = RecordingResponder()
+    agent = BookstoreAgent(llm=llm)
+    agent.chat("Find me a mystery book.")
+    assert llm.latest_context["results"]
+    agent.chat("I prefer fantasy.")
+    assert llm.latest_context["results"] == []
     assert agent.last_turn["tool_calls"] == []
 
 

@@ -4,10 +4,11 @@ A small multi-turn bookstore assistant built with [LangGraph](https://github.com
 plus a deterministic trajectory evaluator that scores the agent's behaviour
 against a scripted test set.
 
-> **Portfolio demo, not production.** Everything here runs offline against a
+> **Portfolio demo, not production.** By default, everything runs offline against a
 > synthetic in-memory catalog. All books, authors, and conversations are
-> invented for this demonstration. There is no real user data, no paid API,
-> and no production traffic.
+> invented for this demonstration. The default has no paid API calls or
+> production traffic. Real LLM requests and LangSmith exports require explicit
+> opt-in and credentials; neither has been validated against a live account.
 
 ## What it demonstrates
 
@@ -20,10 +21,10 @@ against a scripted test set.
   intent, tool calls, response, remembered preferences) and scored by a
   rubric: tool-use correctness, memory use across turns, final answer
   quality.
-- **Observability hooks** — LangSmith / LangFuse integration points exist
-  as code, disabled by default behind an env flag (see "Remaining work").
+- **Observability** — optional LangSmith turn-summary exports, disabled by
+  default and tested against the SDK with a mocked transport.
 - **Swappable LLM layer** — a deterministic stub responder runs offline by
-  default; a real-LLM adapter exists as a clearly-marked scaffold.
+  default; an OpenAI-compatible adapter supports classification and replies.
 
 ## Quickstart
 
@@ -38,6 +39,9 @@ pytest                 # test suite
 ```
 
 No API key is needed. No network calls are made.
+
+On Windows PowerShell, activate with `.\.venv\Scripts\Activate.ps1`
+instead of `source .venv/bin/activate`.
 
 ## How it works
 
@@ -65,10 +69,32 @@ turn 3.
 - `StubResponder` — deterministic, rule-based. Intent classification and
   replies are pure functions of the input text and agent state, so eval
   scores are reproducible.
-- `RealLLMAdapter` — scaffold only. It reads `LLM_API_KEY` from the
-  environment, but its methods raise `NotImplementedError` until a follow-up
-  wires in a real provider call. Set `USE_REAL_LLM=1` to select it
-  (it will raise until implemented — that is intentional).
+- `RealLLMAdapter` — calls an OpenAI-compatible `/chat/completions`
+  endpoint twice per turn: JSON-mode intent/slot classification, then a reply
+  using current catalog results and remembered preferences. It validates
+  slot types and ranges before using them in the graph. Calls have a 30-second
+  HTTP timeout; request errors and invalid output raise without falling back
+  to the stub. Prompts request grounded answers, but factual accuracy is not
+  guaranteed by a prompt. No live model score is claimed.
+
+To opt in (Bash syntax; set the equivalent environment variables in PowerShell):
+
+```bash
+export USE_REAL_LLM=1
+export LLM_API_KEY="<your-key>"  # environment only; never commit it
+export LLM_MODEL="gpt-4o-mini"  # choose a model supported by your provider
+# Optional: export LLM_BASE_URL="https://your-provider.example/v1"
+python main.py demo
+python main.py eval eval_reports/real.json
+unset USE_REAL_LLM
+python main.py eval eval_reports/stub.json
+```
+
+The endpoint must support chat completions and `response_format=json_object`.
+There are no automatic retries; real requests can incur provider charges.
+Every eval report records the adapter class and model so comparisons identify
+which responder produced the score. The small rubric uses literal titles and
+phrases, so real-model paraphrases can lose points without being incorrect.
 
 ### Trajectory logging (`trajectory.py`)
 
@@ -101,20 +127,39 @@ scores three dimensions, each 0.0–1.0:
 A conversation's score is the mean of the dimensions that apply to it;
 the run passes if the aggregate is ≥ 0.80. Run it with `python main.py eval`.
 
-### Tracing hooks (`tracing.py`)
+### LangSmith tracing (`tracing.py`)
 
 `init_tracing()` returns `{"enabled": False, ...}` unless `ENABLE_TRACING=1`
-is set **and** a provider key is present. `trace_turn()` is a no-op while
-disabled, so nothing here can fail a demo run on tracing setup.
+is set **and** `LANGSMITH_API_KEY` is present. While disabled, the hook creates
+no client and sends nothing. With opt-in, it sends one completed LangSmith
+`chain` run per turn, containing the user text, reply, and metadata (thread,
+turn, intent, tool summary and preferences). Use synthetic inputs for this demo.
+
+```bash
+pip install "langsmith>=0.14,<1"  # also provided transitively by LangGraph
+export ENABLE_TRACING=1
+export LANGSMITH_API_KEY="<your-key>"
+export LANGSMITH_PROJECT="langgraph-agent-eval"
+python main.py demo
+unset ENABLE_TRACING
+```
+
+These are synchronous best-effort turn summaries, not nested graph/LLM spans.
+Start/end timestamps mark export time and do not measure model latency. Setup
+errors disable tracing; upload exceptions log a sanitized warning and disable
+subsequent uploads without interrupting chat. Successful client setup does not
+prove an upload appeared in the dashboard. Only LangSmith is implemented;
+LangFuse remains future work. Native LangChain tracing environment flags are
+separate; leave them unset for an offline run.
 
 ## Project structure
 
 ```
 catalog.py                  Synthetic in-memory book catalog + search
-llm.py                      Swappable LLM layer (stub default, real adapter scaffold)
+llm.py                      Offline stub + opt-in OpenAI-compatible adapter
 agent.py                    LangGraph state graph + BookstoreAgent
 trajectory.py               JSONL trajectory logging
-tracing.py                  LangSmith / LangFuse hooks (disabled by default)
+tracing.py                  LangSmith turn export (disabled by default)
 eval.py                     Rubric scoring + eval runner
 main.py                     CLI: demo / eval / chat
 eval_data/conversations.json  8 scripted multi-turn eval conversations
@@ -123,17 +168,14 @@ tests/                      pytest: catalog, graph flow, eval scoring, LLM layer
 
 ## Remaining work
 
-Wiring left for a follow-up agent (deliberately not done here — this repo is
-code only, no deployment, no keys, no live services):
+Local wiring is implemented and tested without credentials. Live checks remain:
 
-1. **Real LLM** — implement `RealLLMAdapter.classify_intent()` and
-   `.respond()` in `llm.py` against an OpenAI-compatible chat-completions
-   endpoint, then set `USE_REAL_LLM=1` and `LLM_API_KEY`. Re-run the eval
-   set and record the scores with the real model.
-2. **Tracing** — `pip install langsmith` and/or `langfuse`, set
-   `ENABLE_TRACING=1` plus the provider keys, and implement the provider
-   call in `tracing.trace_turn()`. Then verify a traced run appears in the
-   provider dashboard.
+1. **Real LLM validation** — provide an API key through the environment,
+   run demo + eval with `USE_REAL_LLM=1`, and record real-model scores beside
+   the stub baseline. HTTP contract tests do not validate provider quality.
+2. **Tracing validation** — provide a LangSmith key, opt in with
+   `ENABLE_TRACING=1`, and verify turn summaries in the provider dashboard.
+   LangFuse support is not implemented.
 3. **Larger eval set** — extend `eval_data/conversations.json` beyond the
    current 8 conversations (mixed intents, ambiguous requests, preference
    changes mid-conversation) and re-baseline the threshold.
@@ -146,7 +188,7 @@ code only, no deployment, no keys, no live services):
 ## What this does not claim
 
 - This is not production agent experience: the catalog is 12 invented books,
-  the "LLM" is a rule-based stub, and there are no real users.
+  the default "LLM" is a rule-based stub, and there are no real users.
 - It does not demonstrate production LangGraph/LangChain usage, RAG, or
   paid-model operations — those are the gaps the "Remaining work" section
   is for.

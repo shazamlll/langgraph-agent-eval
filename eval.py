@@ -115,6 +115,7 @@ def run_eval(
             aggregate[dim] = round(sum(values) / len(values), 3)
     overall = round(sum(r["overall"] for r in results) / len(results), 3) if results else 0.0
     report = {
+        "llm": {"adapter": type(agent.llm).__name__, "model": getattr(agent.llm, "model", None)},
         "threshold": PASS_THRESHOLD,
         "conversations": results,
         "aggregate": aggregate,
@@ -137,6 +138,7 @@ def _fmt(value: float | None, width: int) -> str:
 
 
 def _print_report(report: dict) -> None:
+    print(f"Evaluation LLM: {report['llm']['adapter']} (model={report['llm']['model']})")
     print(f"\n{'conversation':<12} {'tool':>6} {'memory':>7} {'answer':>7} {'overall':>8}  result")
     for r in report["conversations"]:
         d = r["dimensions"]

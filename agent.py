@@ -101,7 +101,8 @@ def build_graph(llm) -> StateGraph:
             }
         else:
             query = {}
-        return {"last_intent": intent, "last_query": query, "preferences": prefs}
+        # Search fills this afresh; other intents must not see old tool output.
+        return {"last_intent": intent, "last_query": query, "preferences": prefs, "last_results": []}
 
     def route(state: AgentState) -> str:
         return "search" if state.get("last_intent") in ("search", "recommend") else "respond"
