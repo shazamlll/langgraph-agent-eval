@@ -1,0 +1,195 @@
+[
+  {
+    "description": "State a genre preference, then ask for a recommendation (memory use).",
+    "id": "conv-01",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [],
+        "expect_tools": [],
+        "user": "I like science fiction."
+      },
+      {
+        "expect_memory_genre": "science fiction",
+        "expect_phrase": null,
+        "expect_titles": [
+          "Orbit of Echoes"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Can you recommend something?"
+      }
+    ]
+  },
+  {
+    "description": "Direct genre search, then a follow-up in the same genre.",
+    "id": "conv-02",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Quiet Witness"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Find me a mystery book."
+      },
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Quiet Witness",
+          "A Study in Smoke"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "What else do you have in mystery?"
+      }
+    ]
+  },
+  {
+    "description": "Search by topic keyword (space).",
+    "id": "conv-03",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "Orbit of Echoes",
+          "The Salt Road"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "I'm looking for a book about space."
+      }
+    ]
+  },
+  {
+    "description": "Search with a price filter (fantasy under $15).",
+    "id": "conv-04",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "Ember Crown"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Show me fantasy books under $15."
+      }
+    ]
+  },
+  {
+    "description": "Preference override: fantasy, then mystery, then recommend (latest wins).",
+    "id": "conv-05",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [],
+        "expect_tools": [],
+        "user": "I love fantasy."
+      },
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [],
+        "expect_tools": [],
+        "user": "Actually, I prefer mystery novels."
+      },
+      {
+        "expect_memory_genre": "mystery",
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Quiet Witness"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Recommend something for tonight."
+      }
+    ]
+  },
+  {
+    "description": "No matching books: the agent should say so gracefully.",
+    "id": "conv-06",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": "don't have any",
+        "expect_titles": [],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Do you have any books about cooking?"
+      }
+    ]
+  },
+  {
+    "description": "Greeting needs no tool call; the next turn searches.",
+    "id": "conv-07",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [],
+        "expect_tools": [],
+        "user": "Hi!"
+      },
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Last Ferry"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Find me a thriller."
+      }
+    ]
+  },
+  {
+    "description": "Memory across three turns: history preference, browse, then recommend.",
+    "id": "conv-08",
+    "turns": [
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [],
+        "expect_tools": [],
+        "user": "I like history books."
+      },
+      {
+        "expect_memory_genre": null,
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Spice Merchants"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Show me your history books."
+      },
+      {
+        "expect_memory_genre": "history",
+        "expect_phrase": null,
+        "expect_titles": [
+          "The Spice Merchants"
+        ],
+        "expect_tools": [
+          "search_catalog"
+        ],
+        "user": "Recommend one for a gift."
+      }
+    ]
+  }
+]
