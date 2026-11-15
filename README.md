@@ -148,9 +148,8 @@ These are synchronous best-effort turn summaries, not nested graph/LLM spans.
 Start/end timestamps mark export time and do not measure model latency. Setup
 errors disable tracing; upload exceptions log a sanitized warning and disable
 subsequent uploads without interrupting chat. Successful client setup does not
-prove an upload appeared in the dashboard. Only LangSmith is implemented;
-LangFuse remains future work. Native LangChain tracing environment flags are
-separate; leave them unset for an offline run.
+prove an upload appeared in the dashboard. Native LangChain tracing environment
+flags are separate; leave them unset for an offline run.
 
 ## Project structure
 
@@ -166,31 +165,11 @@ eval_data/conversations.json  8 scripted multi-turn eval conversations
 tests/                      pytest: catalog, graph flow, eval scoring, LLM layer
 ```
 
-## Remaining work
-
-Local wiring is implemented and tested without credentials. Live checks remain:
-
-1. **Real LLM validation** — provide an API key through the environment,
-   run demo + eval with `USE_REAL_LLM=1`, and record real-model scores beside
-   the stub baseline. HTTP contract tests do not validate provider quality.
-2. **Tracing validation** — provide a LangSmith key, opt in with
-   `ENABLE_TRACING=1`, and verify turn summaries in the provider dashboard.
-   LangFuse support is not implemented.
-3. **Larger eval set** — extend `eval_data/conversations.json` beyond the
-   current 8 conversations (mixed intents, ambiguous requests, preference
-   changes mid-conversation) and re-baseline the threshold.
-4. **CI eval gate** — run `python main.py eval` in GitHub Actions on every
-   PR and fail the build below the 0.80 threshold (the sibling
-   `eval-service-gcp` repo explores the hosted side of this).
-5. **Deployment (optional)** — a hosted demo is out of scope for this repo;
-   if wanted, wrap `BookstoreAgent` in a tiny API and deploy it separately.
-
 ## What this does not claim
 
 - This is not production agent experience: the catalog is 12 invented books,
   the default "LLM" is a rule-based stub, and there are no real users.
 - It does not demonstrate production LangGraph/LangChain usage, RAG, or
-  paid-model operations — those are the gaps the "Remaining work" section
-  is for.
+  paid-model operations.
 - The eval scores measure the stub's behaviour on a hand-written set, not
   general agent quality.

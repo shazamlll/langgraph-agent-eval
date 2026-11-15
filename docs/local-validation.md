@@ -23,11 +23,5 @@ HTTP adapter tests use `httpx.MockTransport`. LangSmith tests use SDK
 autospecs and the installed SDK's real serialization with its request method
 intercepted. No paid provider request or cloud trace upload was made.
 
-## Remaining live checks
-
-Supply an API key via environment, run real-model demo/eval, and compare its
-report with the stub baseline. With a LangSmith key, explicitly enable tracing
-and verify completed turn summaries in its dashboard. No provider account,
-API key, deployment, publication, or production-quality claim is included in
-this local validation. The 1.00 score measures a deterministic stub on eight
-handwritten conversations, not general agent quality.
+The 1.00 score measures a deterministic stub on eight handwritten
+conversations, not general agent quality.
